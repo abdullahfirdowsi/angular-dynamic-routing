@@ -1,1 +1,20 @@
-/* You can add global styles to this file, and also import other style files */
+/* Add Bootstrap CSS */
+@import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
+
+body {
+  background-color: #f8f9fa;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.text-primary {
+  color: #007bff !important;
+}

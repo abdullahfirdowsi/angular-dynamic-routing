@@ -1,11 +1,20 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { LoginComponent } from './components/login/login.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, LoginComponent],
-  template: '<router-outlet></router-outlet>'
+  imports: [RouterOutlet],
+  template: `
+    <div class="app-container">
+      <router-outlet></router-outlet>
+    </div>
+  `,
+  styles: [`
+    .app-container {
+      min-height: 100vh;
+      background-color: #f8f9fa;
+    }
+  `]
 })
 export class AppComponent { }

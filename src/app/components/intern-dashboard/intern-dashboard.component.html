@@ -1,5 +1,550 @@
-<div class="container mt-5">
-  <h2 class="text-primary">Intern Dashboard</h2>
-  <p>Welcome, Intern! You report to the SPOC.</p>
-  <button class="btn btn-primary" (click)="logout()">Logout</button>
+<div class="dashboard-container" [class.sidebar-collapsed]="sidebarCollapsed">
+  <!-- Header -->
+  <header class="dashboard-header shadow-sm">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col-auto d-lg-none">
+          <button class="btn btn-link text-primary sidebar-toggle" (click)="toggleSidebar()">
+            <i class="fas" [class.fa-bars]="sidebarCollapsed" [class.fa-times]="!sidebarCollapsed"></i>
+          </button>
+        </div>
+        <div class="col">
+          <h4 class="mb-0 text-primary">iLink Interns Management</h4>
+        </div>
+        <div class="col-auto">
+          <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ intern?.name || 'Intern' }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="#profile" (click)="setActiveTab('profile')">Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="#" (click)="logout()">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="dashboard-sidebar bg-white shadow-sm">
+    <div class="sidebar-header p-3 border-bottom">
+      <div class="d-flex align-items-center">
+        <div class="sidebar-user-avatar">
+          <span class="user-initial">{{ intern?.name?.charAt(0) || 'I' }}</span>
+        </div>
+        <div class="ms-3">
+          <h6 class="mb-0">{{ intern?.name || 'Intern' }}</h6>
+          <small class="text-muted">{{ intern?.internId || 'ID not available' }}</small>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'dashboard'" href="#dashboard" (click)="setActiveTab('dashboard')">
+            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'profile'" href="#profile" (click)="setActiveTab('profile')">
+            <i class="fas fa-user me-2"></i> Profile
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'performance'" href="#performance" (click)="setActiveTab('performance')">
+            <i class="fas fa-chart-line me-2"></i> Performance
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'training'" href="#training" (click)="setActiveTab('training')">
+            <i class="fas fa-graduation-cap me-2"></i> Training
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'communication'" href="#communication" (click)="setActiveTab('communication')">
+            <i class="fas fa-comments me-2"></i> Communication
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <div class="container-fluid p-4">
+      <!-- Loading Indicator -->
+      <div *ngIf="isLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading your data...</p>
+      </div>
+      
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+      
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading && !errorMessage && intern">
+        <!-- Dashboard Tab -->
+        <div *ngIf="activeTab === 'dashboard'">
+          <h4 class="mb-4">Dashboard</h4>
+          
+          <!-- Welcome Card -->
+          <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Welcome, {{ intern.name }}!</h5>
+              <p class="card-text">You are assigned to the {{ intern.allocatedBU }} business unit. Your SPOC is available for guidance and support.</p>
+            </div>
+          </div>
+          
+          <!-- Performance Summary -->
+          <div class="row mb-4">
+            <div class="col-md-4 mb-3 mb-md-0">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Overall Score</h6>
+                  <div class="display-4 mb-3 font-weight-bold" [ngClass]="getScoreColorClass(intern.performance?.score || 0)">
+                    {{ intern.performance?.score || 0 }}
+                  </div>
+                  <span class="badge" [ngClass]="getGradeColorClass(intern.performance?.grade || 'C')">
+                    Grade: {{ intern.performance?.grade || 'N/A' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Skill Level</h6>
+                  <div class="level-indicator mb-3">
+                    <div class="level-bar" [ngClass]="{'beginner': intern.performance?.level === 'Beginner', 'intermediate': intern.performance?.level === 'Intermediate', 'advanced': intern.performance?.level === 'Advanced'}"></div>
+                  </div>
+                  <span class="badge bg-info">{{ intern.performance?.level || 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Training Progress</h6>
+                  <div class="progress-circle mb-3" [attr.data-progress]="calculateOverallProgress()">
+                    <span>{{ calculateOverallProgress() }}%</span>
+                  </div>
+                  <span class="badge bg-primary">{{ calculateOverallProgress() < 100 ? 'In Progress' : 'Completed' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recent Feedback & Upcoming Events -->
+          <div class="row">
+            <div class="col-lg-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Recent Feedback</h5>
+                </div>
+                <div class="card-body">
+                  <div *ngIf="intern.performance?.feedbacks?.length; else noFeedback">
+                    <div *ngFor="let feedback of intern.performance?.feedbacks?.slice(0, 3)" class="feedback-item mb-3">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h6 class="mb-1">{{ feedback.from }}</h6>
+                          <p class="mb-1 text-muted small">{{ feedback.date | date:'medium' }}</p>
+                          <p class="mb-0">{{ feedback.message }}</p>
+                        </div>
+                        <div class="rating">
+                          <span *ngFor="let star of [1,2,3,4,5]" class="star" [class.filled]="star <= feedback.rating">★</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-template #noFeedback>
+                    <p class="text-muted text-center my-4">No feedback received yet.</p>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                  <div *ngFor="let event of upcomingEvents" class="event-item mb-3">
+                    <div class="d-flex">
+                      <div class="event-date text-center me-3">
+                        <span class="month">{{ event.date | date:'MMM' }}</span>
+                        <span class="day">{{ event.date | date:'dd' }}</span>
+                      </div>
+                      <div>
+                        <h6 class="mb-1">{{ event.title }}</h6>
+                        <p class="mb-0 text-muted">{{ event.description }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Profile Tab -->
+        <div *ngIf="activeTab === 'profile'">
+          <h4 class="mb-4">Profile Information</h4>
+          
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                  <div class="text-center">
+                    <div class="profile-avatar mb-3">
+                      <span>{{ intern.name.charAt(0) }}</span>
+                    </div>
+                    <h5>{{ intern.name }}</h5>
+                    <p class="text-muted">{{ intern.internId }}</p>
+                    <p class="badge bg-primary">{{ intern.allocatedBU }} BU</p>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Email</label>
+                      <p>{{ intern.officialCompanyEmailId }}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Location</label>
+                      <p>{{ intern.location }}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">College Name</label>
+                      <p>{{ intern.collegeName }}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Programming Language</label>
+                      <p>{{ intern.programmingLanguage }}</p>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted">Primary Skills</label>
+                      <div>
+                        <span *ngFor="let skill of intern.primarySkill.split(',')" class="badge bg-primary-light text-primary me-2 mb-2 py-2 px-3">
+                          {{ skill.trim() }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted">Secondary Skills</label>
+                      <div>
+                        <span *ngFor="let skill of intern.secondarySkill.split(',')" class="badge bg-light text-secondary me-2 mb-2 py-2 px-3">
+                          {{ skill.trim() }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted">Areas of Interest</label>
+                      <p>{{ intern.areaOfInterest }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Performance Tab -->
+        <div *ngIf="activeTab === 'performance'">
+          <h4 class="mb-4">Performance Metrics</h4>
+          
+          <!-- Performance Cards -->
+          <div class="row mb-4">
+            <div class="col-md-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Performance Score</h5>
+                </div>
+                <div class="card-body">
+                  <div class="performance-chart">
+                    <div class="score-gauge">
+                      <div class="score-value">{{ intern.performance?.score || 0 }}</div>
+                      <svg viewBox="0 0 120 120" class="gauge">
+                        <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="gauge-fill" cx="60" cy="60" r="50" [style.stroke-dasharray]="(intern.performance?.score || 0) * 3.14 + ' 314'"></circle>
+                      </svg>
+                      <div class="score-label">
+                        <span class="badge" [ngClass]="getGradeColorClass(intern.performance?.grade || 'C')">
+                          Grade: {{ intern.performance?.grade || 'N/A' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Skill Assessment</h5>
+                </div>
+                <div class="card-body">
+                  <!-- Skill Assessment Bars -->
+                  <div class="skill-assessment">
+                    <div class="skill-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>Technical Skills</span>
+                        <span>85%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                    <div class="skill-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>Problem Solving</span>
+                        <span>75%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                    <div class="skill-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>Communication</span>
+                        <span>65%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                    <div class="skill-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>Team Collaboration</span>
+                        <span>80%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                    <div class="skill-item">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>Time Management</span>
+                        <span>70%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Strengths and Areas of Improvement -->
+          <div class="row mb-4">
+            <div class="col-md-6 mb-4 mb-md-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0 text-success">Strengths</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group list-group-flush">
+                    <li *ngFor="let strength of intern.performance?.strengths" class="list-group-item border-0 d-flex align-items-center">
+                      <i class="fas fa-check-circle text-success me-3"></i>
+                      {{ strength }}
+                    </li>
+                    <li *ngIf="!intern.performance?.strengths?.length" class="list-group-item border-0 text-muted">
+                      No strengths recorded yet.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0 text-warning">Areas of Improvement</h5>
+                </div>
+                <div class="card-body">
+                  <ul class="list-group list-group-flush">
+                    <li *ngFor="let area of intern.performance?.areasOfImprovement" class="list-group-item border-0 d-flex align-items-center">
+                      <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                      {{ area }}
+                    </li>
+                    <li *ngIf="!intern.performance?.areasOfImprovement?.length" class="list-group-item border-0 text-muted">
+                      No improvement areas recorded yet.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- All Feedbacks -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">All Feedbacks</h5>
+            </div>
+            <div class="card-body">
+              <div *ngIf="intern.performance?.feedbacks?.length; else allNoFeedback">
+                <div *ngFor="let feedback of intern.performance?.feedbacks" class="feedback-item mb-4 p-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">{{ feedback.from }}</h6>
+                      <p class="mb-1 text-muted small">{{ feedback.date | date:'medium' }}</p>
+                      <p class="mb-0">{{ feedback.message }}</p>
+                    </div>
+                    <div class="rating">
+                      <span *ngFor="let star of [1,2,3,4,5]" class="star" [class.filled]="star <= feedback.rating">★</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <ng-template #allNoFeedback>
+                <p class="text-muted text-center my-4">No feedback received yet. Your SPOC will provide feedback soon.</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Training Tab -->
+        <div *ngIf="activeTab === 'training'">
+          <h4 class="mb-4">Training Progress</h4>
+          
+          <!-- Overall Progress -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h5 class="mb-3">Overall Training Progress</h5>
+              <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar bg-primary" role="progressbar" [style.width.%]="calculateOverallProgress()" [attr.aria-valuenow]="calculateOverallProgress()" aria-valuemin="0" aria-valuemax="100">
+                  {{ calculateOverallProgress() }}%
+                </div>
+              </div>
+              <p class="mb-0 text-muted">{{ getTrainingModulesStatusText() }}</p>
+            </div>
+          </div>
+          
+          <!-- Training Modules -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">Training Modules</h5>
+            </div>
+            <div class="card-body">
+              <div *ngFor="let module of trainingModules" class="training-module mb-4 p-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">{{ module.name }}</h6>
+                  <span class="badge" [ngClass]="module.completed ? 'bg-success' : 'bg-warning'">
+                    {{ module.completed ? 'Completed' : 'In Progress' }}
+                  </span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar" role="progressbar" [ngClass]="module.completed ? 'bg-success' : 'bg-primary'" [style.width.%]="module.progress" [attr.aria-valuenow]="module.progress" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="d-flex justify-content-end mt-2">
+                  <button class="btn btn-sm" [ngClass]="module.completed ? 'btn-outline-secondary' : 'btn-outline-primary'" [disabled]="module.completed">
+                    {{ module.completed ? 'Completed' : 'Continue Training' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Communication Tab -->
+        <div *ngIf="activeTab === 'communication'">
+          <h4 class="mb-4">SPOC Communication</h4>
+          
+          <!-- Message SPOC -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">Message Your SPOC</h5>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="spocMessage" class="form-label">Message</label>
+                <textarea class="form-control" id="spocMessage" rows="4" [(ngModel)]="newFeedbackMessage" placeholder="Type your message here..."></textarea>
+              </div>
+              <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" [disabled]="!newFeedbackMessage.trim()" (click)="sendMessageToSPOC()">
+                  <i class="fas fa-paper-plane me-2"></i> Send Message
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Contact Information -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">SPOC Contact Information</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 text-center mb-4 mb-md-0">
+                  <div class="contact-avatar mb-3">
+                    <span>S</span>
+                  </div>
+                  <h5>Sarah Johnson</h5>
+                  <p class="badge bg-primary">SPOC</p>
+                </div>
+                <div class="col-md-8">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Email</label>
+                      <p><i class="fas fa-envelope me-2 text-primary"></i> sarah.johnson&#64;ilink-systems.com</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Phone</label>
+                      <p><i class="fas fa-phone me-2 text-primary"></i> +1 (555) 123-4567</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Department</label>
+                      <p><i class="fas fa-building me-2 text-primary"></i> {{ intern.allocatedBU }} Business Unit</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted">Office Hours</label>
+                      <p><i class="fas fa-clock me-2 text-primary"></i> 9:00 AM - 5:00 PM</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Message History -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">Recent Messages</h5>
+            </div>
+            <div class="card-body">
+              <div class="message-history">
+                <div class="message received">
+                  <div class="message-sender">Sarah Johnson (SPOC)</div>
+                  <div class="message-content">
+                    <p>Hello! How is your training progress going? Do you need any assistance with the current modules?</p>
+                  </div>
+                  <div class="message-time">Yesterday, 2:30 PM</div>
+                </div>
+                <div class="message sent">
+                  <div class="message-sender">You</div>
+                  <div class="message-content">
+                    <p>Hi Sarah, I'm making good progress. I've completed the Python and SQL modules, and now I'm working on Cloud Computing. No issues so far!</p>
+                  </div>
+                  <div class="message-time">Yesterday, 3:15 PM</div>
+                </div>
+                <div class="message received">
+                  <div class="message-sender">Sarah Johnson (SPOC)</div>
+                  <div class="message-content">
+                    <p>Great to hear! Don't forget about the team meeting next Monday. Let me know if you have any questions about the cloud module.</p>
+                  </div>
+                  <div class="message-time">Yesterday, 3:45 PM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 </div>

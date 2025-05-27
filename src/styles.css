@@ -1,20 +1,87 @@
-/* Add Bootstrap CSS */
-@import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
-
-body {
-  background-color: #f8f9fa;
+/* Custom White and Blue Theme */
+:root {
+  --primary-color: #0d6efd;
+  --primary-dark: #0a58ca;
+  --primary-light: #cfe2ff;
+  --secondary-color: #6c757d;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --white-color: #ffffff;
+  --border-color: #dee2e6;
 }
 
+body {
+  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+/* Custom Button Styles */
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: var(--white-color);
+}
+
+/* Custom Card Styles */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.card-header {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Navbar Styling */
+.navbar-custom {
+  background-color: var(--white-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* Utility Classes */
+.bg-primary-light {
+  background-color: var(--primary-light);
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--primary-color) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+/* Make the site responsive */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  .card {
+    margin-bottom: 15px;
+  }
 }

@@ -1,5 +1,567 @@
-<div class="container mt-5">
-  <h2 class="text-primary">SPOC Dashboard</h2>
-  <p>Welcome, SPOC! You report to the Manager.</p>
-  <button class="btn btn-primary" (click)="logout()">Logout</button>
-</div>
+<div class="dashboard-container" [class.sidebar-collapsed]="sidebarCollapsed">
+  <!-- Header -->
+  <header class="dashboard-header shadow-sm">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col-auto d-lg-none">
+          <button class="btn btn-link text-primary sidebar-toggle" (click)="toggleSidebar()">
+            <i class="fas" [class.fa-bars]="sidebarCollapsed" [class.fa-times]="!sidebarCollapsed"></i>
+          </button>
+        </div>
+        <div class="col">
+          <h4 class="mb-0 text-primary">iLink Interns Management</h4>
+        </div>
+        <div class="col-auto">
+          <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ currentUser?.name || 'SPOC' }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="#profile">Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="#" (click)="logout()">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="dashboard-sidebar bg-white shadow-sm">
+    <div class="sidebar-header p-3 border-bottom">
+      <div class="d-flex align-items-center">
+        <div class="sidebar-user-avatar">
+          <span class="user-initial">{{ currentUser?.name?.charAt(0) || 'S' }}</span>
+        </div>
+        <div class="ms-3">
+          <h6 class="mb-0">{{ currentUser?.name || 'SPOC User' }}</h6>
+          <small class="text-muted">Single Point of Contact</small>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'dashboard'" href="#dashboard" (click)="setActiveTab('dashboard')">
+            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'interns'" href="#interns" (click)="setActiveTab('interns')">
+            <i class="fas fa-users me-2"></i> Interns List
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'performance'" href="#performance" (click)="setActiveTab('performance')">
+            <i class="fas fa-chart-line me-2"></i> Performance
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'reports'" href="#reports" (click)="setActiveTab('reports')">
+            <i class="fas fa-file-alt me-2"></i> Reports
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'feedback'" href="#feedback" (click)="setActiveTab('feedback')">
+            <i class="fas fa-comment-alt me-2"></i> Feedback
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <div class="container-fluid p-4">
+      <!-- Loading Indicator -->
+      <div *ngIf="isLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading data...</p>
+      </div>
+      
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ errorMessage }}
+        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+      </div>
+      
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ successMessage }}
+        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+      </div>
+      
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading && !selectedIntern">
+        <!-- Dashboard Tab -->
+        <div *ngIf="activeTab === 'dashboard'">
+          <h4 class="mb-4">Dashboard Overview</h4>
+          
+          <!-- Summary Cards -->
+          <div class="row mb-4">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Total Interns</h6>
+                  <div class="display-4 mb-3 font-weight-bold text-primary">{{ interns.length }}</div>
+                  <p class="small text-muted mb-0">Across all locations</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Average Score</h6>
+                  <div class="display-4 mb-3 font-weight-bold" [ngClass]="getScoreColorClass(overallPerformanceData.averageScore)">
+                    {{ overallPerformanceData.averageScore }}
+                  </div>
+                  <p class="small text-muted mb-0">Overall performance</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Advanced Level</h6>
+                  <div class="display-4 mb-3 font-weight-bold text-success">
+                    {{ overallPerformanceData.skillLevelDistribution['Advanced'] }}
+                  </div>
+                  <p class="small text-muted mb-0">Top performing interns</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                  <h6 class="text-muted mb-3">Needs Improvement</h6>
+                  <div class="display-4 mb-3 font-weight-bold text-warning">
+                    {{ overallPerformanceData.skillLevelDistribution['Beginner'] }}
+                  </div>
+                  <p class="small text-muted mb-0">Interns requiring attention</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Top Performers & Needs Improvement -->
+          <div class="row mb-4">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0 text-success">Top Performers</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Intern ID</th>
+                          <th>Name</th>
+                          <th>Score</th>
+                          <th>Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let intern of overallPerformanceData.topPerformers" class="cursor-pointer" (click)="selectIntern(intern)">
+                          <td>{{ intern.internId }}</td>
+                          <td>{{ intern.name }}</td>
+                          <td class="text-success">{{ intern.performance?.score }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getGradeColorClass(intern.performance?.grade || 'C')">
+                              {{ intern.performance?.grade }}
+                            </span>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!overallPerformanceData.topPerformers.length">
+                          <td colspan="4" class="text-center text-muted">No data available</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0 text-warning">Needs Improvement</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Intern ID</th>
+                          <th>Name</th>
+                          <th>Score</th>
+                          <th>Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let intern of overallPerformanceData.needsImprovement" class="cursor-pointer" (click)="selectIntern(intern)">
+                          <td>{{ intern.internId }}</td>
+                          <td>{{ intern.name }}</td>
+                          <td class="text-warning">{{ intern.performance?.score }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getGradeColorClass(intern.performance?.grade || 'C')">
+                              {{ intern.performance?.grade }}
+                            </span>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!overallPerformanceData.needsImprovement.length">
+                          <td colspan="4" class="text-center text-muted">No data available</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Performance by BU & Location -->
+          <div class="row">
+            <div class="col-lg-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Performance by Business Unit</h5>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <div *ngFor="let item of performanceByBU | keyvalue" class="chart-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>{{ item.key }}</span>
+                        <span>{{ item.value }}%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-primary" role="progressbar" [style.width.%]="item.value" [attr.aria-valuenow]="item.value" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Performance by Location</h5>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <div *ngFor="let item of performanceByLocation | keyvalue" class="chart-item mb-3">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span>{{ item.key }}</span>
+                        <span>{{ item.value }}%</span>
+                      </div>
+                      <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" [style.width.%]="item.value" [attr.aria-valuenow]="item.value" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Interns List Tab -->
+        <div *ngIf="activeTab === 'interns'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0">Interns List</h4>
+            <span class="badge bg-primary">{{ filteredInterns.length }} Interns</span>
+          </div>
+          
+          <!-- Search & Filters -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="input-group">
+                    <input 
+                      type="text" 
+                      class="form-control" 
+                      placeholder="Search by name, ID, or skills..." 
+                      [(ngModel)]="searchTerm"
+                    >
+                    <button class="btn btn-primary" (click)="applySearch()">Search</button>
+                  </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                  <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+                    <i class="fas fa-filter me-1"></i> Filters
+                  </button>
+                  <button class="btn btn-outline-danger ms-2" (click)="resetFilters()" [disabled]="!searchTerm && !filterOptions.location && !filterOptions.allocatedBU && !filterOptions.programmingLanguage && !filterOptions.skillLevel">
+                    <i class="fas fa-times me-1"></i> Clear
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Collapsible Filters -->
+              <div class="collapse mt-3" id="filtersCollapse">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label for="locationFilter" class="form-label">Location</label>
+                    <select id="locationFilter" class="form-select" [(ngModel)]="filterOptions.location" (change)="applySearch()">
+                      <option value="">All Locations</option>
+                      <option *ngFor="let location of locationOptions" [value]="location">{{ location }}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="buFilter" class="form-label">Business Unit</label>
+                    <select id="buFilter" class="form-select" [(ngModel)]="filterOptions.allocatedBU" (change)="applySearch()">
+                      <option value="">All BUs</option>
+                      <option *ngFor="let bu of buOptions" [value]="bu">{{ bu }}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="languageFilter" class="form-label">Programming Language</label>
+                    <select id="languageFilter" class="form-select" [(ngModel)]="filterOptions.programmingLanguage" (change)="applySearch()">
+                      <option value="">All Languages</option>
+                      <option *ngFor="let language of languageOptions" [value]="language">{{ language }}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="levelFilter" class="form-label">Skill Level</label>
+                    <select id="levelFilter" class="form-select" [(ngModel)]="filterOptions.skillLevel" (change)="applySearch()">
+                      <option value="">All Levels</option>
+                      <option value="Advanced">Advanced</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Beginner">Beginner</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Interns Table -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="cursor-pointer" (click)="setSorting('name')">
+                        Name 
+                        <i *ngIf="sortField === 'name'" class="fas" [ngClass]="{'fa-sort-up': sortDirection === 'asc', 'fa-sort-down': sortDirection === 'desc'}"></i>
+                      </th>
+                      <th>Intern ID</th>
+                      <th class="cursor-pointer" (click)="setSorting('location')">
+                        Location
+                        <i *ngIf="sortField === 'location'" class="fas" [ngClass]="{'fa-sort-up': sortDirection === 'asc', 'fa-sort-down': sortDirection === 'desc'}"></i>
+                      </th>
+                      <th class="cursor-pointer" (click)="setSorting('bu')">
+                        BU
+                        <i *ngIf="sortField === 'bu'" class="fas" [ngClass]="{'fa-sort-up': sortDirection === 'asc', 'fa-sort-down': sortDirection === 'desc'}"></i>
+                      </th>
+                      <th class="cursor-pointer" (click)="setSorting('score')">
+                        Score
+                        <i *ngIf="sortField === 'score'" class="fas" [ngClass]="{'fa-sort-up': sortDirection === 'asc', 'fa-sort-down': sortDirection === 'desc'}"></i>
+                      </th>
+                      <th>Grade</th>
+                      <th>Level</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let intern of filteredInterns" class="cursor-pointer">
+                      <td (click)="selectIntern(intern)">{{ intern.name }}</td>
+                      <td (click)="selectIntern(intern)">{{ intern.internId }}</td>
+                      <td (click)="selectIntern(intern)">{{ intern.location }}</td>
+                      <td (click)="selectIntern(intern)">{{ intern.allocatedBU }}</td>
+                      <td (click)="selectIntern(intern)" [ngClass]="getScoreColorClass(intern.performance?.score || 0)">
+                        {{ intern.performance?.score || 'N/A' }}
+                      </td>
+                      <td (click)="selectIntern(intern)">
+                        <span class="badge" [ngClass]="getGradeColorClass(intern.performance?.grade || 'C')">
+                          {{ intern.performance?.grade || 'N/A' }}
+                        </span>
+                      </td>
+                      <td (click)="selectIntern(intern)">
+                        <span class="badge" [ngClass]="getLevelColorClass(intern.performance?.level || 'Beginner')">
+                          {{ intern.performance?.level || 'N/A' }}
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-primary me-1" (click)="selectIntern(intern)">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="filteredInterns.length === 0">
+                      <td colspan="8" class="text-center py-4">
+                        <p class="text-muted mb-0">No interns found matching your criteria.</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Performance Tab -->
+        <div *ngIf="activeTab === 'performance'">
+          <h4 class="mb-4">Performance Analytics</h4>
+          
+          <!-- Grade Distribution -->
+          <div class="row mb-4">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Grade Distribution</h5>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <div class="pie-chart">
+                      <div class="grades-chart">
+                        <div class="grade-segment a-plus" [style.--percentage]="(overallPerformanceData.gradeDistribution['A+'] / interns.length) * 100"></div>
+                        <div class="grade-segment a" [style.--percentage]="(overallPerformanceData.gradeDistribution['A'] / interns.length) * 100"></div>
+                        <div class="grade-segment b-plus" [style.--percentage]="(overallPerformanceData.gradeDistribution['B+'] / interns.length) * 100"></div>
+                        <div class="grade-segment b" [style.--percentage]="(overallPerformanceData.gradeDistribution['B'] / interns.length) * 100"></div>
+                        <div class="grade-segment c" [style.--percentage]="(overallPerformanceData.gradeDistribution['C'] / interns.length) * 100"></div>
+                      </div>
+                    </div>
+                    <div class="chart-legend mt-4">
+                      <div class="d-flex flex-wrap">
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-success"></span>
+                          <span>A+ ({{ overallPerformanceData.gradeDistribution['A+'] }})</span>
+                        </div>
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-primary"></span>
+                          <span>A ({{ overallPerformanceData.gradeDistribution['A'] }})</span>
+                        </div>
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-info"></span>
+                          <span>B+ ({{ overallPerformanceData.gradeDistribution['B+'] }})</span>
+                        </div>
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-warning"></span>
+                          <span>B ({{ overallPerformanceData.gradeDistribution['B'] }})</span>
+                        </div>
+                        <div class="legend-item mb-2">
+                          <span class="legend-color bg-danger"></span>
+                          <span>C ({{ overallPerformanceData.gradeDistribution['C'] }})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                  <h5 class="mb-0">Skill Level Distribution</h5>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <div class="skill-distribution">
+                      <div class="progress-stacked">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                          [style.width.%]="(overallPerformanceData.skillLevelDistribution['Advanced'] / interns.length) * 100">
+                          {{ overallPerformanceData.skillLevelDistribution['Advanced'] }}
+                        </div>
+                        <div class="progress-bar bg-info" role="progressbar" 
+                          [style.width.%]="(overallPerformanceData.skillLevelDistribution['Intermediate'] / interns.length) * 100">
+                          {{ overallPerformanceData.skillLevelDistribution['Intermediate'] }}
+                        </div>
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                          [style.width.%]="(overallPerformanceData.skillLevelDistribution['Beginner'] / interns.length) * 100">
+                          {{ overallPerformanceData.skillLevelDistribution['Beginner'] }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="chart-legend mt-4">
+                      <div class="d-flex flex-wrap">
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-success"></span>
+                          <span>Advanced ({{ overallPerformanceData.skillLevelDistribution['Advanced'] }})</span>
+                        </div>
+                        <div class="legend-item me-3 mb-2">
+                          <span class="legend-color bg-info"></span>
+                          <span>Intermediate ({{ overallPerformanceData.skillLevelDistribution['Intermediate'] }})</span>
+                        </div>
+                        <div class="legend-item mb-2">
+                          <span class="legend-color bg-warning"></span>
+                          <span>Beginner ({{ overallPerformanceData.skillLevelDistribution['Beginner'] }})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Performance Trends -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">Business Unit Performance Comparison</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <div *ngFor="let item of performanceByBU | keyvalue" class="chart-item mb-4">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-bold">{{ item.key }} Business Unit</span>
+                    <span class="badge" [ngClass]="getScoreColorClass(item.value)">{{ item.value }} Points</span>
+                  </div>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+                      role="progressbar" 
+                      [style.width.%]="item.value" 
+                      [attr.aria-valuenow]="item.value" 
+                      aria-valuemin="0" 
+                      aria-valuemax="100">
+                      {{ item.value }}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Reports Tab -->
+        <div *ngIf="activeTab === 'reports'">
+          <h4 class="mb-4">Reports & Analytics</h4>
+          
+          <div class="row mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
+              <div class="card border-0 shadow-sm h-100 report-card">
+                <div class="card-body text-center p-4">
+                  <div class="report-icon mb-3 bg-primary-light text-primary">
+                    <i class="fas fa-chart-bar"></i>
+                  </div>
+                  <h5>Performance Summary</h5>
+                  <p class="text-muted">Overall performance analytics for all interns</p>
+                  <button class="btn btn-primary mt-2">Generate Report</button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+              <div class="card border-0 shadow-sm h-100 report-card">
+                <div class="card-body text-center p-4">
+                  <div class="report-icon mb-3 bg-success-light text-success">
+                    <i class="fas fa-user-graduate"></i>
+                  </div>
+                  <h5>Skill Assessment</h5>
+                  <p class="text-muted">Detailed skill analysis and improvement areas</p>
+                  <button class="btn btn-success mt-2">Generate Report</button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+              <div class="card border-0 shadow-sm h-100 report-card">
+                <div class="card-body text-center p-4">
+                  <div class="report-icon mb-3 bg-warning-light text-warning">
+                    <i class="fas fa-business-time"></i>
+                  </div>
+                  <h5>Business Unit Report</h5>
+                  <p class="text-muted">Performance comparison across business units</p>
+                  <button class="btn btn-warning mt-2">Generate Report</button>
+                </div>

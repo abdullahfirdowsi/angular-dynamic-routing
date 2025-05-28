@@ -32,7 +32,7 @@
           </div>
 
           <!-- Role-based info alert -->
-          <div class="alert" [ngClass]="{'alert-info': isIntern, 'alert-primary': isSpoc, 'alert-warning': isManager}">
+          <div class="alert alert-primary">
             <i class="bi" [ngClass]="{'bi-info-circle': isIntern, 'bi-pencil-square': isSpoc, 'bi-check-circle': isManager}"></i>
             <span *ngIf="isIntern"> You have read-only access to this performance data.</span>
             <span *ngIf="isSpoc"> As SPOC, you can edit all fields. Score will automatically determine the performance level.</span>

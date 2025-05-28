@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, catchError, map, retry, switchMap, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 // Interface for InternPerformance data
 export interface InternPerformance {
@@ -13,10 +15,15 @@ export interface InternPerformance {
   collegeName: string;
   bu: string;
   score: number;
-  performanceLevel: 'L1' | 'L2' | 'L3' | 'N/A';
-  status: 'Pending' | 'Approved';
+  performanceLevel: string; // 'L1' | 'L2' | 'L3' | 'N/A'
+  status: string; // 'Pending' | 'Approved'
   lastModifiedBy?: string;
   lastModifiedDate?: Date;
+}
+
+// Interface for update performance request
+export interface UpdatePerformanceRequest {
+  score: number;
 }
 
 @Injectable({
@@ -24,10 +31,13 @@ export interface InternPerformance {
 })
 export class InternPerformanceService {
   private performanceData = new BehaviorSubject<InternPerformance[]>([]);
-  private originalData: InternPerformance[] = [];
+  private apiUrl = environment.apiUrl;
 
-  constructor(private authService: AuthService) {
-    this.initializeData();
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
+    this.loadPerformanceData();
   }
 
   // Method to get the performance data as observable
@@ -36,187 +46,147 @@ export class InternPerformanceService {
   }
 
   // Method to calculate performance level based on score
-  calculatePerformanceLevel(score: number): 'L1' | 'L2' | 'L3' | 'N/A' {
+  calculatePerformanceLevel(score: number): string {
     if (score > 90) return 'L1';
     if (score >= 80 && score <= 90) return 'L2';
     if (score < 70) return 'L3';
     return 'N/A'; 
   }
 
-  // Initialize sample data
-  private initializeData(): void {
-    const sampleData: InternPerformance[] = [
-      {
-        id: 1,
-        internId: 'I400',
-        name: 'Abdullah Firdowsi',
-        location: 'Chennai',
-        programmingLanguage: 'Python',
-        email: 'abdullah.firdowsi@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 95,
-        performanceLevel: 'L1',
-        status: 'Approved'
-      },
-      {
-        id: 2,
-        internId: 'I403',
-        name: 'Logesh M',
-        location: 'Trichy',
-        programmingLanguage: 'Java',
-        email: 'logesh.m@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 85,
-        performanceLevel: 'L2',
-        status: 'Pending'
-      },
-      {
-        id: 3,
-        internId: 'I404',
-        name: 'Guna Kuppuchamy',
-        location: 'Trichy',
-        programmingLanguage: 'Java',
-        email: 'guna.kuppuchamy@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 65,
-        performanceLevel: 'L3',
-        status: 'Pending'
-      },
-      {
-        id: 4,
-        internId: 'I406',
-        name: 'Gugan MK',
-        location: 'Chennai',
-        programmingLanguage: 'Java',
-        email: 'gugan.mk@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 88,
-        performanceLevel: 'L2',
-        status: 'Approved'
-      },
-      {
-        id: 5,
-        internId: 'I411',
-        name: 'Mohana Gowri',
-        location: 'Chennai',
-        programmingLanguage: 'Java',
-        email: 'mohana.gowri@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 92,
-        performanceLevel: 'L1',
-        status: 'Pending'
-      },
-      {
-        id: 6,
-        internId: 'I413',
-        name: 'Dilip S',
-        location: 'Chennai',
-        programmingLanguage: 'Java',
-        email: 'dilip.s@ilink-systems.com',
-        collegeName: 'Karpagam',
-        bu: 'DEX',
-        score: 75,
-        performanceLevel: 'L3',
-        status: 'Pending'
-      }
-    ];
-
-    this.originalData = [...sampleData];
-    this.performanceData.next(sampleData);
+  // Load performance data from API
+  loadPerformanceData(): void {
+    this.http.get<InternPerformance[]>(`${this.apiUrl}/InternPerformance`)
+      .pipe(
+        retry({ count: 2, delay: 1000 }), // Retry failed requests up to 2 times with 1s delay
+        tap(data => {
+          console.log('Loaded intern performance data:', data.length, 'records');
+          this.performanceData.next(data);
+        }),
+        catchError(error => {
+          console.error('Error loading performance data:', error);
+          // Keep existing data if there was an error
+          return this.handleError(error);
+        })
+      )
+      .subscribe({
+        error: (err) => console.error('Failed to load intern performance data:', err.message)
+      });
   }
 
   // CRUD Operations
   
   // Get intern by ID
-  getInternById(id: number): InternPerformance | undefined {
-    return this.performanceData.value.find(intern => intern.id === id);
+  getInternById(id: number): Observable<InternPerformance> {
+    return this.http.get<InternPerformance>(`${this.apiUrl}/InternPerformance/${id}`)
+      .pipe(
+        catchError(this.handleError)
+      );
   }
 
-  // Update intern data
-  updateInternData(updatedIntern: InternPerformance): void {
-    const currentData = this.performanceData.value;
-    const index = currentData.findIndex(intern => intern.id === updatedIntern.id);
+  // Update intern performance (SPOC only)
+  updateInternData(id: number, score: number): Observable<InternPerformance> {
+    const request: UpdatePerformanceRequest = { score };
     
-    if (index !== -1) {
-      // Auto-calculate performance level based on score
-      updatedIntern.performanceLevel = this.calculatePerformanceLevel(updatedIntern.score);
-      updatedIntern.lastModifiedDate = new Date();
-      
-      // Get current user role for tracking who made the change
-      this.authService.getUserRole().subscribe(role => {
-        updatedIntern.lastModifiedBy = role || 'unknown';
-      });
-      
-      // Mark as pending when SPOC makes changes
-      updatedIntern.status = 'Pending';
-      
-      // Update the data
-      const newData = [...currentData];
-      newData[index] = updatedIntern;
-      this.performanceData.next(newData);
-    }
+    // First check if user has permission to update
+    return this.canEdit().pipe(
+      tap(canEdit => {
+        if (!canEdit) {
+          throw new Error('You do not have permission to update intern performance data');
+        }
+      }),
+      // If user has permission, proceed with the update
+      map(() => this.http.put<InternPerformance>(
+        `${this.apiUrl}/InternPerformance/${id}`, request)
+        .pipe(
+          retry({ count: 1, delay: 1000 }), // Retry once with 1s delay
+          tap(updatedIntern => {
+            console.log('Updated intern performance:', updatedIntern);
+            // Update the local data
+            const currentData = this.performanceData.value;
+            const updatedData = currentData.map(intern => 
+              intern.id === id ? updatedIntern : intern
+            );
+            this.performanceData.next(updatedData);
+          }),
+          catchError(this.handleError)
+        )
+      ),
+      // Flatten the observable
+      catchError(error => {
+        console.error('Permission check failed:', error);
+        return throwError(() => error);
+      })
+    ).pipe(
+      // Flatten the nested observable
+      switchMap(observable => observable)
+    );
   }
 
-  // Approve intern performance (for Manager role)
-  approveInternPerformance(id: number): void {
-    const currentData = this.performanceData.value;
-    const index = currentData.findIndex(intern => intern.id === id);
-    
-    if (index !== -1) {
-      const updatedData = [...currentData];
-      updatedData[index] = {
-        ...updatedData[index],
-        status: 'Approved',
-        lastModifiedDate: new Date()
-      };
-      
-      this.authService.getUserRole().subscribe(role => {
-        updatedData[index].lastModifiedBy = role || 'unknown';
-      });
-      
-      this.performanceData.next(updatedData);
-    }
+  // Approve intern performance (Manager only)
+  approveInternPerformance(id: number): Observable<InternPerformance> {
+    return this.http.post<InternPerformance>(`${this.apiUrl}/InternPerformance/${id}/approve`, {})
+      .pipe(
+        tap(approvedIntern => {
+          // Update the local data
+          const currentData = this.performanceData.value;
+          const updatedData = currentData.map(intern => 
+            intern.id === id ? approvedIntern : intern
+          );
+          this.performanceData.next(updatedData);
+        }),
+        catchError(this.handleError)
+      );
   }
 
-  // Reset data to original state
-  resetData(): void {
-    this.performanceData.next([...this.originalData]);
+  // Refresh data from API
+  refreshData(): void {
+    this.loadPerformanceData();
   }
 
   // Role-based access methods
   
   // Check if user can edit (SPOC role)
   canEdit(): Observable<boolean> {
-    return new Observable<boolean>(observer => {
-      this.authService.getUserRole().subscribe(role => {
-        observer.next(role === 'spoc');
-        observer.complete();
-      });
-    });
+    return this.authService.getUserRole().pipe(
+      map(role => role === 'spoc')
+    );
   }
   
   // Check if user can approve (Manager role)
   canApprove(): Observable<boolean> {
-    return new Observable<boolean>(observer => {
-      this.authService.getUserRole().subscribe(role => {
-        observer.next(role === 'manager');
-        observer.complete();
-      });
-    });
+    return this.authService.getUserRole().pipe(
+      map(role => role === 'manager')
+    );
   }
   
   // Check if user is intern (read-only access)
   isIntern(): Observable<boolean> {
-    return new Observable<boolean>(observer => {
-      this.authService.getUserRole().subscribe(role => {
-        observer.next(role === 'intern');
-        observer.complete();
-      });
-    });
+    return this.authService.getUserRole().pipe(
+      map(role => role === 'intern')
+    );
+  }
+
+  // Error handling
+  private handleError(error: HttpErrorResponse) {
+    let errorMessage = 'An unknown error occurred';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      // Server-side error
+      if (error.status === 401) {
+        errorMessage = 'You must be logged in to access this resource';
+      } else if (error.status === 403) {
+        errorMessage = 'You do not have permission to perform this action';
+      } else if (error.error && error.error.message) {
+        errorMessage = error.error.message;
+      } else {
+        errorMessage = `Error Code: ${error.status}, Message: ${error.message}`;
+      }
+    }
+    
+    console.error(errorMessage);
+    return throwError(() => new Error(errorMessage));
   }
 }

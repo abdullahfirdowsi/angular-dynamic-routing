@@ -147,20 +147,37 @@ export class PerformanceDashboardComponent implements OnInit {
     }
 
     // Save changes
-    this.internPerformanceService.updateInternData(this.editingIntern);
-    this.isEditing = false;
-    this.scoreError = '';
+    this.internPerformanceService.updateInternData(this.editingIntern.id, this.editingIntern.score)
+      .subscribe({
+        next: (updatedIntern) => {
+          console.log('Successfully updated intern:', updatedIntern);
+          this.isEditing = false;
+          this.scoreError = '';
+        },
+        error: (error) => {
+          console.error('Error updating intern:', error);
+          this.scoreError = error.message || 'Failed to update intern performance';
+        }
+      });
   }
 
   // Approve performance record (Manager role)
   approvePerformance(id: number): void {
     if (!this.isManager) return;
-    this.internPerformanceService.approveInternPerformance(id);
+    this.internPerformanceService.approveInternPerformance(id)
+      .subscribe({
+        next: (approvedIntern) => {
+          console.log('Successfully approved intern performance:', approvedIntern);
+        },
+        error: (error) => {
+          console.error('Error approving intern performance:', error);
+        }
+      });
   }
 
-  // Reset all data to original state
+  // Refresh data from API
   resetData(): void {
-    this.internPerformanceService.resetData();
+    this.internPerformanceService.refreshData();
   }
 
   // Determine if sorting is active for a column

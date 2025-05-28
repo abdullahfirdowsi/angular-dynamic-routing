@@ -24,13 +24,10 @@
             </div>
             <div class="col-md-6 text-md-end mt-2 mt-md-0">
               <div class="btn-group" role="group">
-                <button class="btn btn-outline-primary" (click)="resetData()">
+                <button *ngIf="isSpoc" class="btn btn-outline-primary" (click)="resetData()">
                   <i class="bi bi-arrow-clockwise"></i> Reset
                 </button>
-                <button *ngIf="isSpoc" class="btn btn-success">
-                  <i class="bi bi-plus-circle"></i> Add New
-                </button>
-              </div>
+              </div> 
             </div>
           </div>
 
@@ -195,10 +192,10 @@
                 <span class="badge bg-danger me-2">L3</span>
                 <small>Needs Improvement (Score < 70)</small>
               </div>
-              <div class="d-flex align-items-center">
+              <!-- <div class="d-flex align-items-center">
                 <span class="badge bg-secondary me-2">N/A</span>
-                <small>Score between 70-79</small>
-              </div>
+                <small>Unknown Score </small>
+              </div> -->
             </div>
           </div>
         </div>

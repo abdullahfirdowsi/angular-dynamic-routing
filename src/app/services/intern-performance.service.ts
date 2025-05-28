@@ -40,7 +40,7 @@ export class InternPerformanceService {
     if (score > 90) return 'L1';
     if (score >= 80 && score <= 90) return 'L2';
     if (score < 70) return 'L3';
-    return 'N/A'; // For scores between 70-79
+    return 'N/A'; 
   }
 
   // Initialize sample data
@@ -121,7 +121,7 @@ export class InternPerformanceService {
         collegeName: 'Karpagam',
         bu: 'DEX',
         score: 75,
-        performanceLevel: 'N/A',
+        performanceLevel: 'L3',
         status: 'Pending'
       }
     ];

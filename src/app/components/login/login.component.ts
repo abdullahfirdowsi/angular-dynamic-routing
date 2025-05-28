@@ -28,7 +28,7 @@ export class LoginComponent {
   fillDemoCredentials(username: string, password: string) {
     this.username = username;
     this.password = password;
-    this.onSubmit(); // Auto-submit for convenience
+    // this.onSubmit(); // Auto-submit for convenience
   }
 
   onSubmit() {

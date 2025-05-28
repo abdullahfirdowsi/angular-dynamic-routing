@@ -179,3 +179,58 @@ tbody tr:hover {
   }
 }
 
+/* State Change Detection Styles */
+.alert.alert-dismissible {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1050;
+  min-width: 300px;
+  animation: slideIn 0.5s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Form validation and state change feedback */
+.invalid-feedback {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  color: #dc3545;
+}
+
+.form-text.text-muted {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  color: #6c757d;
+}
+
+.form-text.text-success {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  color: #28a745;
+}
+
+/* Input validation state */
+.form-control.is-invalid {
+  border-color: #dc3545;
+}
+
+/* Adjust alert responsiveness */
+@media (max-width: 767.98px) {
+  .alert.alert-dismissible {
+    width: 90%;
+    right: 5%;
+    top: 10px;
+  }
+}
+

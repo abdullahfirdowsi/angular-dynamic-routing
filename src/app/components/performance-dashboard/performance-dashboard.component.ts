@@ -37,6 +37,11 @@ export class PerformanceDashboardComponent implements OnInit {
   };
   isEditing = false;
   scoreError: string = '';
+  // State tracking properties
+  originalScore: number = 0;
+  showNoChangeAlert: boolean = false;
+  alertMessage: string = '';
+  alertType: 'info' | 'warning' | 'success' = 'info';
 
   constructor(
     private internPerformanceService: InternPerformanceService,
@@ -123,18 +128,54 @@ export class PerformanceDashboardComponent implements OnInit {
     }
   }
 
+  // Show alert with auto-hide
+  private showAlert(message: string, type: 'info' | 'warning' | 'success'): void {
+    this.alertMessage = message;
+    this.alertType = type;
+    this.showNoChangeAlert = true;
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      this.showNoChangeAlert = false;
+      this.alertMessage = '';
+    }, 3000);
+  }
+
+  // Check if score has been modified
+  hasScoreChanged(): boolean {
+    return this.originalScore !== this.editingIntern.score;
+  }
+
   // Start editing an intern record (SPOC role)
   startEditing(intern: InternPerformance): void {
     if (!this.isSpoc) return;
     this.editingIntern = { ...intern };
+    this.originalScore = intern.score; // Store original score for comparison
     this.isEditing = true;
     this.scoreError = '';
+    this.showNoChangeAlert = false;
+  }
+  
+  // Handle score changes
+  onScoreChange(newScore: number): void {
+    // Validate score
+    if (newScore < 0 || newScore > 100 || isNaN(newScore)) {
+      this.scoreError = 'Score must be between 0 and 100';
+    } else {
+      this.scoreError = '';
+      
+      // Check if score has changed from original
+      if (!this.hasScoreChanged()) {
+        this.showAlert('No changes detected. Score is the same as original.', 'info');
+      }
+    }
   }
 
   // Cancel editing
   cancelEditing(): void {
     this.isEditing = false;
     this.scoreError = '';
+    this.showNoChangeAlert = false;
   }
 
   // Save edited record
@@ -146,16 +187,35 @@ export class PerformanceDashboardComponent implements OnInit {
       return;
     }
 
-    // Save changes
+    // Check if score has actually changed
+    if (!this.hasScoreChanged()) {
+      this.showAlert('No changes to save. Score remains the same.', 'info');
+      this.isEditing = false;
+      return;
+    }
+
+    // Save changes only if score has actually changed
     this.internPerformanceService.updateInternData(this.editingIntern.id, this.editingIntern.score)
       .subscribe({
         next: (updatedIntern) => {
           console.log('Successfully updated intern:', updatedIntern);
+          
+          // Update the data in the table
+          const index = this.filteredData.findIndex(i => i.id === updatedIntern.id);
+          if (index !== -1) {
+            this.filteredData[index] = updatedIntern;
+            this.performanceData = this.performanceData.map(i => 
+              i.id === updatedIntern.id ? updatedIntern : i
+            );
+          }
+          
           this.isEditing = false;
           this.scoreError = '';
+          this.showAlert('Score updated successfully!', 'success');
         },
         error: (error) => {
           console.error('Error updating intern:', error);
+          this.showAlert('Failed to update score. Please try again.', 'warning');
           this.scoreError = error.message || 'Failed to update intern performance';
         }
       });

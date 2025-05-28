@@ -1,5 +1,19 @@
 <div class="container mt-5">
-  <h2 class="text-primary">Intern Dashboard</h2>
-  <p>Welcome, Intern! You report to the SPOC.</p>
-  <button class="btn btn-primary" (click)="logout()">Logout</button>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary mb-0">Intern Dashboard</h2>
+      <p class="mb-0">Welcome, Intern! You report to the SPOC.</p>
+    </div>
+    <button class="btn btn-danger" (click)="logout()">
+      <i class="bi bi-box-arrow-right me-2"></i>Logout
+    </button>
+  </div>
+
+  <div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    Below is your performance dashboard. As an intern, you have read-only access to your performance data.
+  </div>
+  
+  <!-- Embedded Performance Dashboard -->
+  <app-performance-dashboard></app-performance-dashboard>
 </div>

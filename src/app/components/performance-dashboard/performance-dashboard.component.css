@@ -1,0 +1,181 @@
+/* Sortable column header styles */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.sortable:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sortable i {
+  margin-left: 5px;
+  font-size: 0.8rem;
+}
+
+/* Table layout styles */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 75vh;
+}
+
+.table {
+  min-width: 1000px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+}
+
+/* Badge styles for performance levels */
+.badge {
+  font-size: 0.85em;
+  padding: 0.35em 0.65em;
+  border-radius: 4px;
+}
+
+/* Form control styles for editing */
+.form-control-sm {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Form validation styles */
+input.ng-invalid.ng-touched {
+  border-color: #dc3545;
+}
+
+.text-danger {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Hover effects for rows */
+tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
+/* Active row styling for edit mode */
+.table-active {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+/* Performance level indicator colors */
+.bg-success {
+  background-color: #28a745 !important;
+}
+
+.bg-warning {
+  background-color: #ffc107 !important;
+}
+
+.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* Card styles */
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.card-header {
+  border-bottom: 0;
+  padding: 1rem 1.5rem;
+}
+
+/* Button styles */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.2rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* Performance level legend styles */
+.mt-3 h6 {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+/* Alert styles */
+.alert {
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+}
+
+.alert i {
+  margin-right: 0.5rem;
+}
+
+/* Responsive styles for different screen sizes */
+@media (max-width: 767.98px) {
+  .table {
+    font-size: 0.85rem;
+    min-width: 800px;
+  }
+  
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .badge {
+    font-size: 0.75em;
+  }
+  
+  /* Stack action buttons on small screens */
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.25rem !important;
+  }
+  
+  /* Smaller padding in cards */
+  .card-body {
+    padding: 1rem;
+  }
+  
+  /* Adjust performance level legend for mobile */
+  .d-flex.flex-wrap.gap-3 {
+    gap: 0.5rem !important;
+  }
+  
+  /* Make alerts more compact */
+  .alert {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* For very small devices */
+@media (max-width: 575.98px) {
+  .table {
+    font-size: 0.75rem;
+    min-width: 650px;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 0.25rem;
+    border-radius: 0.25rem !important;
+  }
+}
+

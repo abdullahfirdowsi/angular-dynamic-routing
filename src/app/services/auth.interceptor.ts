@@ -48,7 +48,10 @@ export class AuthInterceptor implements HttpInterceptor {
         withCredentials: true,
         setHeaders: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // Add client-side CORS request headers
+          'X-Requested-With': 'XMLHttpRequest'
         }
       });
     }
@@ -86,7 +89,9 @@ export class AuthInterceptor implements HttpInterceptor {
             case 0:
               // Network error or CORS issue
               console.error('Network error or CORS issue:', request.url);
-              return throwError(() => new Error('Unable to connect to the server. Please check your network connection.'));
+              console.warn('This may be a CORS configuration issue. Check if the backend has proper CORS headers enabled.');
+              // More descriptive error for CORS issues
+              return throwError(() => new Error('Unable to connect to the server. This might be due to a CORS configuration issue or network problem.'));
             
             case 500:
               // Server error

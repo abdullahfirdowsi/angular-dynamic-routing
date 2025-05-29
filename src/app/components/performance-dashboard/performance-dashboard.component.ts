@@ -235,11 +235,6 @@ export class PerformanceDashboardComponent implements OnInit {
       });
   }
 
-  // Refresh data from API
-  resetData(): void {
-    this.internPerformanceService.refreshData();
-  }
-
   // Determine if sorting is active for a column
   isSortActive(column: string): boolean {
     return this.sortColumn === column;
